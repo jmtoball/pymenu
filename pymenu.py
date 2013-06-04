@@ -57,22 +57,27 @@ import subprocess
 
 class PyMenuGUI:
 
+    BG = "#222222"
+    FG = "#ffffff"
+    ACTIVE_FG = "white"
+    ACTIVE_BG = "#285577"
+
     active = 0
-    activetext = ""
 
     def __init__(self, model):
         self.model = model
         self.root = Tk()
-        self.frame = Frame(self.root, bg='black', width=self.root.winfo_screenwidth(), height=25)
+        self.frame = Frame(self.root, bg=self.BG, width=self.root.winfo_screenwidth(), height=25)
         self.frame.pack_propagate(False)
         self.frame.pack()
 
-        self.prompt = Entry(self.frame, insertbackground='grey', bg='black', fg='white', relief=FLAT)
+        self.prompt = Entry(self.frame, insertbackground=self.FG, bg=self.BG, fg=self.FG, relief=FLAT)
+        self.prompt.bind('<KeyPress>', self.precomplete)
         self.prompt.bind('<KeyRelease>', self.complete)
         self.prompt.focus_set()
         self.prompt.pack(side=LEFT)
 
-        self.completions = Frame(self.frame, bg='black')
+        self.completions = Frame(self.frame, bg=self.BG)
 
         self.refill(model.completeCommand('dir'))
         self.root.update_idletasks()
@@ -103,19 +108,23 @@ class PyMenuGUI:
             subprocess.Popen([path]+call[1:])
             sys.exit(0)
 
+    def refresh(self):
+        i = 0
+        for completion in self.completions.winfo_children():
+            color = self.BG
+            if i == self.active:
+                color = self.ACTIVE_BG 
+            completion.config(bg=color)
+            i += 1
+
     def refill(self, completions):
         for completion in self.completions.winfo_children():
             completion.destroy()
 
-        i = 0
         for completion in islice(completions, 20):
-            color = 'darkgrey'
-            if i == self.active:
-                color = 'darkblue'
-                self.activetext = completion
-            i += 1
-            label = Label(self.completions, fg='white', bg=color, text=completion)
+            label = Label(self.completions, fg=self.FG, bg=self.BG, text=completion)
             label.pack(side=LEFT, padx=5)
+        self.refresh()
         self.completions.pack(side=LEFT, padx=25)
 
 if __name__ == '__main__':
