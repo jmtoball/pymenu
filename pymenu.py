@@ -35,10 +35,8 @@ class PyMenuCompletions:
         head, tail = os.path.split(path)
         fullPath = self.path
         if os.path.isabs(path):
-            print("absPath")
             fullPath = head
         elif head:
-            print("path")
             fullPath = os.path.join(self.path, head)
         pathfilter = lambda x: tail in x
         return list(filter(pathfilter, os.listdir(fullPath)))
