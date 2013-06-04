@@ -85,19 +85,30 @@ class PyMenuGUI:
         self.root.bind("<Escape>", lambda e: e.widget.quit())
         self.root.mainloop()
 
-    def complete(self, event):
+    def precomplete(self, event):
         key = repr(event.keysym)
-        if key == "'Left'":
-            self.active = abs(self.active-1)
-        elif key == "'Right'":
-            self.active = (self.active+1)%20
-        elif key == "'Return'":
+        ret = None
+        if key == "'Return'":
             self.exec()
         elif key == "'Tab'":
-            self.prompt.delete(0, len( self.prompt.get()))
-            self.prompt.insert(0, self.activetext)
+            self.prompt.delete(0, len(self.prompt.get()))
+            self.prompt.insert(0, self.completions.winfo_children()[self.active].cget('text'))
             self.active = 0
-        else:
+        elif key in ["'Left'", "'Right'"]:
+            if key == "'Left'":
+                if self.active > 0:
+                    self.active -= 1
+                    ret = 'break'
+            else:
+                if self.prompt.index(INSERT) == len(self.prompt.get()):
+                    self.active = min(self.active+1,len(self.completions.winfo_children())-1)
+            self.refresh()
+        return ret
+
+    def complete(self, event):
+        key = repr(event.keysym)
+        if len(event.char) > 0:
+            self.active = 0
             self.refill(self.model.complete(self.prompt.get()))
 
     def exec(self):
