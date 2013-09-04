@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python
 import os
 import stat
 import difflib
@@ -10,6 +10,8 @@ class PyMenuCompletions:
     binpaths = os.environ['PATH'].split(':')
     commandcache = None
     pathmap = {}
+    current = None
+    lastComplete = None
 
     def getExecutables(self, paths):
         executables = []
@@ -41,102 +43,155 @@ class PyMenuCompletions:
         pathfilter = lambda x: tail in x
         return list(filter(pathfilter, os.listdir(fullPath)))
 
-    def complete(self, tocomplete):
-        completion = self.completeCommand(tocomplete)
+    def getCurrent(self):
+        return self.current
+
+    def complete(self, toComplete):
+        if toComplete == self.lastComplete:
+            return self.getCurrent()
+        completion = self.completeCommand(toComplete)
         if len(completion):
-            return completion
+            self.current = completion
         else:
-            return self.completePath(tocomplete)
+            self.current = self.completePath(toComplete)
+        self.lastComplete = toComplete
+        return self.current
 
     def getPath(self, command):
         return self.pathmap.get(command)
 
+def hextorgb(hx):
+    hx = hx.replace('#', '')
+    rgb = []
+    for i in range(0, 6, 2):
+        rgb.append((int('0x'+hx[i:i+2], 0)+1)*256-1)
+    return rgb
 
-from tkinter import *
+def convert_code(display, keycode):
+    return display.lookup_string(display.keycode_to_keysym(keycode, 0))
+
+from Xlib import X, display
 import subprocess
+import sys
 
 class PyMenuGUI:
 
     BG = "#222222"
     FG = "#ffffff"
-    ACTIVE_FG = "white"
     ACTIVE_BG = "#285577"
+
+    PADDING = 5
 
     active = 0
 
+    displayed = 0
+
+    prompt = ""
+
     def __init__(self, model):
         self.model = model
-        self.root = Tk()
-        self.frame = Frame(self.root, bg=self.BG, width=self.root.winfo_screenwidth(), height=25)
-        self.frame.pack_propagate(False)
-        self.frame.pack()
 
-        self.prompt = Entry(self.frame, insertbackground=self.FG, bg=self.BG, fg=self.FG, relief=FLAT)
-        self.prompt.bind('<KeyPress>', self.precomplete)
-        self.prompt.bind('<KeyRelease>', self.complete)
-        self.prompt.focus_set()
-        self.prompt.pack(side=LEFT)
+        self.disp = display.Display()
+        self.screen = self.disp.screen()
+        self.root = self.screen.root
 
-        self.completions = Frame(self.frame, bg=self.BG)
+        self.width = self.root.get_geometry().width
 
+        colors = self.screen.default_colormap
+        fg = colors.alloc_color(*hextorgb(self.FG)).pixel
+        bg = colors.alloc_color(*hextorgb(self.BG)).pixel
+        bg_active = colors.alloc_color(*hextorgb(self.ACTIVE_BG)).pixel
+
+        self.fg = self.root.create_gc(foreground=fg, subwindow_mode = X.IncludeInferiors)
+        self.bg = self.root.create_gc(foreground=bg, subwindow_mode = X.IncludeInferiors)
+        self.bg_active = self.root.create_gc(foreground=bg_active, subwindow_mode = X.IncludeInferiors)
+
+        self.draw_bg()
+
+        self.complete()
         self.refill(model.completeCommand('dir'))
-        self.root.update_idletasks()
-        self.root.overrideredirect(True)
-        self.root.bind("<Escape>", lambda e: e.widget.quit())
-        self.root.mainloop()
+
+        self.disp.sync()
+
+        self.root.grab_keyboard(True, X.GrabModeAsync, X.GrabModeAsync, X.CurrentTime)
+
+        self.eventloop()
+
 
     def precomplete(self, event):
-        key = repr(event.keysym)
-        ret = None
-        if key == "'Return'":
-            self.exec()
-        elif key == "'Tab'":
-            self.prompt.delete(0, len(self.prompt.get()))
-            self.prompt.insert(0, self.completions.winfo_children()[self.active].cget('text'))
+        keycode = event.detail
+        key = convert_code(self.disp, keycode)
+        #TODO: constants for keycodes
+        if keycode == 36: #Enter
+            self.disp.ungrab_keyboard(X.CurrentTime)
+            self.run()
+        elif keycode == 9: #Esc
+            self.exit()
+        elif keycode == 23: #Tab
+            self.prompt = self.model.getCurrent()[self.active]
             self.active = 0
-        elif key in ["'Left'", "'Right'"]:
-            if key == "'Left'":
-                if self.active > 0:
-                    self.active -= 1
-                    ret = 'break'
+            self.complete()
+        elif keycode == 22: #Backspace
+            self.prompt = self.prompt[:-1]
+            self.complete()
+        elif keycode in [114,113]: # Left, Right
+            if keycode == 114:
+                self.active = (self.active + 1) % self.displayed
             else:
-                if self.prompt.index(INSERT) == len(self.prompt.get()):
-                    self.active = min(self.active+1,len(self.completions.winfo_children())-1)
-            self.refresh()
-        return ret
+                self.active = max(0, self.active - 1)
+            self.refill(self.model.complete(self.prompt))
+        else:
+            self.prompt += key
+            self.complete()
 
-    def complete(self, event):
-        key = repr(event.keysym)
-        if len(event.char) > 0:
-            self.active = 0
-            self.refill(self.model.complete(self.prompt.get()))
 
-    def exec(self):
-        call = self.prompt.get().split(" ")
+    def eventloop(self):
+        while True:
+            event = self.root.display.next_event()
+            if event.type == X.KeyRelease:
+                self.precomplete(event)
+
+    def complete(self):
+        self.refill(self.model.complete(self.prompt))
+
+    def exit(self):
+        #TODO: Clean screen when exiting
+        self.fg.free()
+        self.bg.free()
+        self.bg_active.free()
+        self.disp.sync()
+        sys.exit(0)
+
+    def run(self):
+        call = self.prompt.split(" ")
         if len(call):
             cmd = call[0]
             path = model.getPath(cmd)
             subprocess.Popen([path]+call[1:])
-            sys.exit(0)
+            self.exit()
 
-    def refresh(self):
-        i = 0
-        for completion in self.completions.winfo_children():
-            color = self.BG
-            if i == self.active:
-                color = self.ACTIVE_BG 
-            completion.config(bg=color)
-            i += 1
+    def draw_bg(self):
+        #TODO: Draw to canvas instead?
+        self.root.fill_rectangle(self.bg, 0,0, self.width,25)
 
     def refill(self, completions):
-        for completion in self.completions.winfo_children():
-            completion.destroy()
+        i = 0
+        self.draw_bg()
 
-        for completion in islice(completions, 20):
-            label = Label(self.completions, fg=self.FG, bg=self.BG, text=completion)
-            label.pack(side=LEFT, padx=5)
-        self.refresh()
-        self.completions.pack(side=LEFT, padx=25)
+        extents = self.fg.query_text_extents(self.prompt)
+        self.root.draw_text(self.fg, self.PADDING, extents.font_ascent+self.PADDING, self.prompt)
+        x = max(100, extents.overall_width+2*self.PADDING)
+        for completion in completions:
+            extents = self.fg.query_text_extents(completion)
+            if x+extents.overall_width+2*self.PADDING > self.width:
+                self.displayed = i
+                break
+            if i == self.active:
+                self.root.fill_rectangle(self.bg_active, x, 0, extents.overall_width+2*self.PADDING, extents.font_ascent + 2*self.PADDING)
+            self.root.draw_text(self.fg, x+self.PADDING, extents.font_ascent+self.PADDING, completion)
+            x += 2*self.PADDING + extents.overall_width
+            i+= 1
+        self.disp.sync()
 
 if __name__ == '__main__':
     model = PyMenuCompletions()
