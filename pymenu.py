@@ -173,23 +173,31 @@ class PyMenuGUI:
     def draw_bg(self):
         #TODO: Draw to canvas instead?
         self.root.fill_rectangle(self.bg, 0,0, self.width,25)
+        self.disp.sync()
+
+    def draw_text(self, x, y, text, draw_bg = False):
+        extents = self.fg.query_text_extents(text)
+        if x+extents.overall_width+2*self.PADDING > self.width:
+            return False
+        boxWidth = extents.overall_width + 2 * self.PADDING
+        boxHeight = extents.font_ascent + 2 * self.PADDING
+        if draw_bg:
+            self.root.fill_rectangle(self.bg_active, x, 0, boxWidth, boxHeight)
+        self.root.draw_text(self.fg, x + self.PADDING, extents.font_ascent + self.PADDING, text)
+        return x+boxWidth
 
     def refill(self, completions):
         i = 0
         self.draw_bg()
 
         extents = self.fg.query_text_extents(self.prompt)
-        self.root.draw_text(self.fg, self.PADDING, extents.font_ascent+self.PADDING, self.prompt)
-        x = max(100, extents.overall_width+2*self.PADDING)
+        x = self.draw_text(0, 0, self.prompt)
+        x = max(100, x)
         for completion in completions:
-            extents = self.fg.query_text_extents(completion)
-            if x+extents.overall_width+2*self.PADDING > self.width:
+            x = self.draw_text(x, 0, completion, i == self.active)
+            if not x:
                 self.displayed = i
                 break
-            if i == self.active:
-                self.root.fill_rectangle(self.bg_active, x, 0, extents.overall_width+2*self.PADDING, extents.font_ascent + 2*self.PADDING)
-            self.root.draw_text(self.fg, x+self.PADDING, extents.font_ascent+self.PADDING, completion)
-            x += 2*self.PADDING + extents.overall_width
             i+= 1
         self.disp.sync()
 
