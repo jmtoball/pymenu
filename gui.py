@@ -40,14 +40,18 @@ class PyMenuGUI:
 
         self.width = self.root.get_geometry().width
 
+        self.canvas = self.root.create_window(0,0,self.width, 30, 0, self.screen.root_depth, X.CopyFromParent, 0)
+        self.canvas.change_attributes(override_redirect=True)
+        self.canvas.map()
+
         colors = self.screen.default_colormap
         fg = colors.alloc_color(*hextorgb(self.FG)).pixel
         bg = colors.alloc_color(*hextorgb(self.BG)).pixel
         bg_active = colors.alloc_color(*hextorgb(self.ACTIVE_BG)).pixel
 
-        self.fg = self.root.create_gc(foreground=fg, subwindow_mode = X.IncludeInferiors)
-        self.bg = self.root.create_gc(foreground=bg, subwindow_mode = X.IncludeInferiors)
-        self.bg_active = self.root.create_gc(foreground=bg_active, subwindow_mode = X.IncludeInferiors)
+        self.fg = self.canvas.create_gc(foreground=fg, subwindow_mode = X.IncludeInferiors)
+        self.bg = self.canvas.create_gc(foreground=bg, subwindow_mode = X.IncludeInferiors)
+        self.bg_active = self.canvas.create_gc(foreground=bg_active, subwindow_mode = X.IncludeInferiors)
 
         self.draw_bg()
 
@@ -124,7 +128,9 @@ class PyMenuGUI:
         self.fg.free()
         self.bg.free()
         self.bg_active.free()
+        self.canvas.destroy()
         self.disp.sync()
+        self.disp.close()
         sys.exit(0)
 
     def run(self):
@@ -138,7 +144,7 @@ class PyMenuGUI:
 
     def draw_bg(self):
         #TODO: Draw to canvas instead?
-        self.root.fill_rectangle(self.bg, 0,0, self.width,25)
+        self.canvas.fill_rectangle(self.bg, 0,0, self.width,25)
         self.disp.sync()
 
     def draw_text(self, x, y, text, draw_bg = False):
@@ -148,8 +154,8 @@ class PyMenuGUI:
         boxWidth = extents.overall_width + 2 * self.PADDING
         boxHeight = extents.font_ascent + 2 * self.PADDING
         if draw_bg:
-            self.root.fill_rectangle(self.bg_active, x, 0, boxWidth, boxHeight)
-        self.root.draw_text(self.fg, x + self.PADDING, extents.font_ascent + self.PADDING, text)
+            self.canvas.fill_rectangle(self.bg_active, x, 0, boxWidth, boxHeight)
+        self.canvas.draw_text(self.fg, x + self.PADDING, extents.font_ascent + self.PADDING, text)
         return x+boxWidth
 
     def refill(self, completions):
