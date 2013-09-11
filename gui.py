@@ -63,22 +63,21 @@ class PyMenuGUI:
     def precomplete(self, event):
         keycode = event.detail
         key = convert_code(self.disp, keycode)
-        #TODO: constants for keycodes
-        if keycode == KeyCodes.Enter: #Enter
+        if keycode == KeyCodes.Enter:
             self.setPrompt(self.model.getCurrent()[self.active])
             self.run()
-        elif keycode == KeyCodes.Esc: #Esc
+        elif keycode == KeyCodes.Esc:
             self.exit()
-        elif keycode == KeyCodes.Space: #Space
+        elif keycode == KeyCodes.Space:
             self.setPrompt(self.model.getCurrent()[self.active]+" ")
             self.active = 0
             self.step += 1
-        elif keycode == KeyCodes.Tab: #Tab
+        elif keycode == KeyCodes.Tab:
             self.setPrompt(self.model.getCurrent()[self.active]+" ")
             self.active = 0
             self.step += 1
             self.complete()
-        elif keycode == KeyCodes.Backspace: #Backspace
+        elif keycode == KeyCodes.Backspace:
             self.setPrompt(self.getPrompt()[:-1])
             self.complete()
         elif keycode in [KeyCodes.Left, KeyCodes.Right]:
@@ -132,6 +131,7 @@ class PyMenuGUI:
         call = self.prompt.split(" ")
         if len(call):
             cmd = call[0]
+            print call
             path = self.model.getPath(cmd)
             subprocess.Popen([path]+call[1:])
             self.exit()
