@@ -9,7 +9,7 @@ class TestPathCompletions(unittest.TestCase):
         self.pymenu = PyMenuCompletions()
 
     def test_files(self):
-        self.assertEqual(self.pymenu.completePath("t"), ["tests.py", "tests"])
+        self.assertEqual(self.pymenu.completePath("tes"), ["tests.py", "tests"])
 
     def test_dirs(self):
         self.assertEqual(self.pymenu.completePath("tests/t"), ["test1", "test2"])
@@ -40,20 +40,6 @@ class TestCommandCompletion(unittest.TestCase):
 
     def test_nonexitent(self):
         self.assertFalse("xyzlolo" in self.pymenu.completeCommand("xyzlolo"))
-
-
-class TestFallbacks(unittest.TestCase):
-
-    def setUp(self):
-        self.pymenu = PyMenuCompletions()
-        self.pymenu.path = os.path.join(os.path.dirname(__file__), "tests")
-        self.pymenu.binpaths = [self.pymenu.path]
-
-    def test_fallnofallback(self):
-        self.assertEqual(self.pymenu.complete("dir"), ["dir"])
-
-    def test_fallbacktofile(self):
-        self.assertEqual(self.pymenu.complete("test"), ["test1", "test2"])
 
 if __name__ == '__main__':
     unittest.main()
