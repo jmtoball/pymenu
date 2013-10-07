@@ -31,9 +31,12 @@ class PyMenuCompletions:
             self.commandcache = self.getExecutables(self.binpaths)
         return self.commandcache
 
+    def suggest(self, needle, haystack):
+        filterfunc = lambda haystack: needle in haystack
+        return filter(filterfunc, haystack)
+
     def completeCommand(self, name):
-        commandfilter = lambda x: name in x
-        return list(filter(commandfilter, self.getAllExecutables()))
+        return self.suggest(name, self.getAllExecutables())
 
     def completePath(self, path):
         head, tail = os.path.split(path)
@@ -42,8 +45,7 @@ class PyMenuCompletions:
             fullPath = head
         elif head:
             fullPath = os.path.join(self.path, head)
-        pathfilter = lambda x: tail in x
-        return list(filter(pathfilter, os.listdir(fullPath)))
+        return self.suggest(tail, os.listdir(fullPath))
 
     def getCurrent(self):
         return self.current

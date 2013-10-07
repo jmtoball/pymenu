@@ -41,5 +41,14 @@ class TestCommandCompletion(unittest.TestCase):
     def test_nonexitent(self):
         self.assertFalse("xyzlolo" in self.pymenu.completeCommand("xyzlolo"))
 
+class TestCompletionOrder(unittest.TestCase):
+
+    def setUp(self):
+        self.pymenu = PyMenuCompletions()
+        self.pymenu.binpaths = [os.path.join(os.path.dirname(__file__), "tests")]
+
+    def test_position(self):
+        self.assertEqual(self.pymenu.completeCommand("bar"), ["barfoo", "foobar"])
+
 if __name__ == '__main__':
     unittest.main()
