@@ -9,7 +9,7 @@ class TestPathCompletions(unittest.TestCase):
         self.pymenu = PyMenuCompletions()
 
     def test_files(self):
-        self.assertEqual(self.pymenu.completePath("tes"), ["tests.py", "tests"])
+        self.assertEqual(self.pymenu.completePath("tes"), ["tests", "tests.py"])
 
     def test_dirs(self):
         self.assertEqual(self.pymenu.completePath("tests/t"), ["test1", "test2"])
@@ -48,7 +48,10 @@ class TestCompletionOrder(unittest.TestCase):
         self.pymenu.binpaths = [os.path.join(os.path.dirname(__file__), "tests")]
 
     def test_position(self):
-        self.assertEqual(self.pymenu.completeCommand("bar"), ["barfoo", "foobar"])
+        self.assertEqual(self.pymenu.completeCommand("foo"), ["foobar", "barfoo"])
+
+    def test_length(self):
+        self.assertEqual(self.pymenu.completeCommand("bar"), ["bar", "barfoo", "abar", "foobar"])
 
 if __name__ == '__main__':
     unittest.main()

@@ -31,9 +31,13 @@ class PyMenuCompletions:
             self.commandcache = self.getExecutables(self.binpaths)
         return self.commandcache
 
+    def judge(self, needle):
+        return lambda haystack: haystack.index(needle) + (len(haystack)-len(needle))/10.0
+
     def suggest(self, needle, haystack):
         filterfunc = lambda haystack: needle in haystack
-        return filter(filterfunc, haystack)
+        filtered = filter(filterfunc, haystack)
+        return sorted(filtered, key=self.judge(needle))
 
     def completeCommand(self, name):
         return self.suggest(name, self.getAllExecutables())
