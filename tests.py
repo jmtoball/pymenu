@@ -28,6 +28,8 @@ class TestOSCommandCompletion(unittest.TestCase):
     def test_name(self):
         self.assertTrue("dir" in self.pymenu.completeCommand("di"))
 
+    def test_case_insensitivity(self):
+        self.assertTrue("dir" in self.pymenu.completeCommand("di"))
 
 class TestCommandCompletion(unittest.TestCase):
 
@@ -48,10 +50,13 @@ class TestCompletionOrder(unittest.TestCase):
         self.pymenu.binpaths = [os.path.join(os.path.dirname(__file__), "tests")]
 
     def test_position(self):
-        self.assertEqual(self.pymenu.completeCommand("foo"), ["foobar", "barfoo"])
+        self.assertEqual(self.pymenu.completeCommand("foo"), ["foobar", "Foobar", "barfoo"])
 
     def test_length(self):
         self.assertEqual(self.pymenu.completeCommand("bar"), ["bar", "barfoo", "abar", "foobar"])
+
+    def test_length(self):
+        self.assertEqual(self.pymenu.completeCommand("Foo"), ["Foobar", "foobar", "barfoo"])
 
 if __name__ == '__main__':
     unittest.main()

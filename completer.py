@@ -31,13 +31,21 @@ class PyMenuCompletions:
             self.commandcache = self.getExecutables(self.binpaths)
         return self.commandcache
 
-    def judge(self, needle):
-        return lambda haystack: haystack.index(needle) + (len(haystack)-len(needle))/10.0
+    def judge(self, needle, haystack):
+        case_sensitivity = 0
+        if needle not in haystack:
+            needle = needle.lower()
+            haystack = haystack.lower()
+            case_sensitivity = 1
+        index = haystack.index(needle)
+        overlap = len(haystack)-len(needle)
+        return index + case_sensitivity + overlap/10.0
 
     def suggest(self, needle, haystack):
-        filterfunc = lambda haystack: needle in haystack
+        filterfunc = lambda haystack: needle.lower() in haystack.lower()
         filtered = filter(filterfunc, haystack)
-        return sorted(filtered, key=self.judge(needle))
+        keyfunc = lambda haystack: self.judge(needle, haystack)
+        return sorted(filtered, key=keyfunc)
 
     def completeCommand(self, name):
         return self.suggest(name, self.getAllExecutables())
