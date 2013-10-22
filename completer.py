@@ -19,6 +19,8 @@ class PyMenuCompletions:
         executables = []
         executable = stat.S_IEXEC | stat.S_IXGRP | stat.S_IXOTH
         for dir in paths:
+            if not os.path.isdir(dir):
+                continue
             for filename in os.listdir(dir):
                 path = os.path.join(dir,filename)
                 if os.path.isfile(path) and os.stat(path).st_mode & executable:
