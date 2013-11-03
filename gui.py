@@ -97,6 +97,7 @@ class PyMenuGUI:
     def eventloop(self):
         while True:
             event = self.root.display.next_event()
+
             if event.type == X.KeyRelease:
                 self.precomplete(event)
 
@@ -123,7 +124,6 @@ class PyMenuGUI:
         self.refill(completions)
 
     def exit(self):
-        #TODO: Clean screen when exiting
         self.disp.ungrab_keyboard(X.CurrentTime)
         self.fg.free()
         self.bg.free()
@@ -143,7 +143,6 @@ class PyMenuGUI:
             self.exit()
 
     def draw_bg(self):
-        #TODO: Draw to canvas instead?
         self.canvas.fill_rectangle(self.bg, 0,0, self.width,25)
         self.disp.sync()
 
