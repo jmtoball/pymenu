@@ -66,7 +66,7 @@ class PyMenuGUI:
 
     def precomplete(self, event):
         keycode = event.detail
-        key = convert_code(self.disp, keycode)
+        key = convert_code(self.disp, keycode, event.state)
         if keycode == KeyCodes.Enter:
             self.setPrompt(self.model.getCurrent()[self.active])
             self.run()
@@ -137,7 +137,6 @@ class PyMenuGUI:
         call = self.prompt.split(" ")
         if len(call):
             cmd = call[0]
-            print call
             path = self.model.getPath(cmd)
             subprocess.Popen([path]+call[1:])
             self.exit()
