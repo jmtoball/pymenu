@@ -3,17 +3,17 @@ import subprocess
 import sys
 
 from completer import PyMenuCompletions
-from utils import hextorgb, convert_code
+from utils import hextorgb, code_to_sym, sym_to_char
 
 class KeyCodes:
 
-    Backspace = 22
-    Enter     = 36
-    Esc       = 9
-    Left      = 113
-    Right     = 114
-    Space     = 65
-    Tab       = 23
+    Backspace = 65288
+    Enter     = 65293
+    Esc       = 65307
+    Left      = 65361
+    Right     = 65363
+    Space     = 32
+    Tab       = 65289
 
 class PyMenuGUI:
 
@@ -65,33 +65,34 @@ class PyMenuGUI:
         self.eventloop()
 
     def precomplete(self, event):
-        keycode = event.detail
-        key = convert_code(self.disp, keycode, event.state)
-        if keycode == KeyCodes.Enter:
+        keysym = code_to_sym(self.disp, event.detail, event.state)
+        char = sym_to_char(self.disp, keysym)
+
+        if keysym == KeyCodes.Enter:
             self.setPrompt(self.model.getCurrent()[self.active])
             self.run()
-        elif keycode == KeyCodes.Esc:
+        elif keysym == KeyCodes.Esc:
             self.exit()
-        elif keycode == KeyCodes.Space:
+        elif keysym  == KeyCodes.Space:
             self.setPrompt(self.model.getCurrent()[self.active]+" ")
             self.active = 0
             self.step += 1
-        elif keycode == KeyCodes.Tab:
+        elif keysym == KeyCodes.Tab:
             self.setPrompt(self.model.getCurrent()[self.active]+" ")
             self.active = 0
             self.step += 1
             self.complete()
-        elif keycode == KeyCodes.Backspace:
+        elif keysym == KeyCodes.Backspace:
             self.setPrompt(self.getPrompt()[:-1])
             self.complete()
-        elif keycode in [KeyCodes.Left, KeyCodes.Right]:
+        elif keysym in [KeyCodes.Left, KeyCodes.Right]:
             if keycode == KeyCodes.Right:
                 self.active = (self.active + 1) % self.displayed
             else:
                 self.active = max(0, self.active - 1)
             self.refill(self.model.complete(self.prompt))
-        elif key:
-            self.setPrompt(self.getPrompt()+key)
+        elif keysym and char:
+            self.setPrompt(self.getPrompt()+char)
             self.complete()
 
     def eventloop(self):
